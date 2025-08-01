@@ -1,0 +1,133 @@
+# dataframe creation
+from pyspark.sql import SparkSession
+
+df = spark.read.csv('/FileStore/tables/Adidas_US_Sales_Datasets.csv', header=True, inferSchema=True)
+display(df.limit(5))
+
+#dataframe to tempview table
+df.createOrReplaceTempView('adidas_sales')
+
+#dataview table display
+%sql
+select * from adidas_sales limit 5
+
+#requirement 1 using Spark Sql
+#Total sales, total profit, average price per unit, total units sold
+
+display(
+spark.sql("""\
+    select sum(`Total Sales`) as Total_Sales, sum(`Operating Profit`) as Total_Profit,
+    round(avg(`Price per Unit`),2) as Avg_Price_Per_Unit, sum(`Units Sold`) as Total_Units_Sold
+    from adidas_sales
+    """))
+
+#requirement 1 using PySpark
+from pyspark.sql.functions import *
+df.agg(sum('Total Sales').alias('Total Sales'),\
+        sum('Operating Profit').alias('Total Profit'),\
+        round(avg('Price per Unit'),2).alias('Avg Price per Unit'),\
+        sum('Units Sold').alias('Total Units Sold')).show()
+
+#requirement 2 using Spark SQL
+#total sales by month
+
+display(\
+spark.sql("""\
+    select sum(`Total Sales`) as Total_Sales, date_format(`Invoice Date`,'MMMM') as Month from adidas_sales
+    group by 2
+    order by 1 desc
+    """))
+
+#requirement 2 using PySpark
+display(df.groupBy(date_format('Invoice Date','MMMM').alias('Month')).agg(sum('Total Sales').alias('total sales')))
+
+#requirement 3 using Spark SQL
+#total sales by state
+
+display(\
+spark.sql("""\
+    select sum(`Total Sales`) as Total_Sales, State from adidas_sales 
+    group by 2
+    order by 1 desc
+    limit 5
+    """))
+
+#requirement 3 using PySpark
+display(df.groupBy('State').agg(sum('Total Sales').alias('total_sales')).orderBy(col('total_sales').desc()).limit(5))
+
+#requirement 4 using Spark SQL
+#total sales by region
+
+display(\
+spark.sql("""\
+    select sum(`Total Sales`) as Total_Sales, Region from adidas_sales
+    group by 2
+    order by 1 desc
+    limit 5
+    """))
+
+#requirement 4 using PySpark
+display(df.groupBy('Region').agg(sum('Total Sales').alias('total_sales')).orderBy(col('total_sales').desc()).limit(5))
+
+#requirement 5 using Spark SQL
+#total sales by product
+
+display(\
+spark.sql("""\
+    select sum(`Total Sales`) as total_sales, Product from adidas_sales
+    group by 2
+    order by 1 desc
+    limit 5
+    """))
+
+#requirements 5 using PySpark
+display(df.groupBy('Product').agg(sum('Total Sales').alias('total_sales')).orderBy(col('total_sales').desc()).limit(5))
+
+#requirement 6 using Spark SQL
+#total sales by retailer
+
+display(\
+spark.sql("""\
+    select sum(`Total Sales`) as total_sales,Retailer from adidas_sales
+    group by 2
+    order by 1 desc
+    limit 5
+    """))
+
+#requirement 6 using PySpark
+display(df.groupBy('Retailer').agg(sum('Total Sales').alias('total_sales')).orderBy(col('total_sales').desc()).limit(5))
+
+#requirement 7 using Spark SQL
+#units sold by product category and gender type
+
+display(\
+spark.sql("""\
+    select sum(`Units Sold`) as total_units_sold, Product from adidas_sales
+    group by 2 limit 5
+    """))
+
+#requirement 7 using PySpark
+display(df.groupBy('Product').agg(sum('Total Sales').alias('total_sales')).orderBy(col('total_sales').desc()).limit(5))
+
+#requirement 8 using Spark SQL
+#top performing cities by profit
+
+display(\
+spark.sql("""\
+    select sum(`Operating Profit`) as Total_Profit, City from adidas_sales
+    group by 2
+    order by 1 desc
+    limit 5
+    """))
+
+#requirement 9 using Spark SQL
+#units sold by sales method
+
+display(\
+    spark.sql("""\
+        select sum(`Units Sold`) as total_units_sol, `Sales Method` from adidas_sales
+        group by 2
+        order by 1
+        limit 5
+        """)
+    )
